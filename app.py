@@ -59,27 +59,6 @@ try:
 except Exception as error:
     print("Exception 3:", error)
 
-try:
-
-    contents = 'hello world'
-    
-    with open('/home/osk/stadtradeln/contents.html') as f:
-        contents = " ".join([l.rstrip("\n") for l in f])
-
-    print('contents received, length: ')
-    print(len(contents))
-    print
-    result = re.search(r"https:\/\/api.stadtradeln.de\/v1\/kmbook\/(\b\d+)\/add", contents)
-    print('re.search done, groups:')
-    print(result.groups())
-    print
-    print('group 1:')
-    print(result.group(1))
-    print        
-except Exception as error:
-    print("Exception 5:", error)
-
-
 print
 print
 print
