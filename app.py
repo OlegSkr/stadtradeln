@@ -236,6 +236,11 @@ def connect_stadtradeln():
         except Exception as error:
             print("Exception:", error)
         
+        # TODO:
+        # render_template('connection_success.html')
+        # or
+        # redirect(f'/connection_success', code=302) # + add new def/route connection_success
+        
         return '', 200
 
 def get_oauth_token(authorization_code:str) -> dict:
