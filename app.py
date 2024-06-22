@@ -203,10 +203,31 @@ def connect_stadtradeln():
         print('POST')
         print('/connect_stadtradeln')
         print()
-        print(request.args)
-        print(request.data)
-        print(request.json)
-        print(request.form)
+        
+        try:
+            print('request.args:')
+            print(request.args)
+        except Exception as error:
+            print("Exception 1:", error)
+            
+        try:
+            print('request.data:')
+            print(request.data)
+        except Exception as error:
+            print("Exception 1:", error)
+        
+        try:
+            print('request.json:')
+            print(request.json)
+        except Exception as error:
+            print("Exception 1:", error)
+        
+        try:
+            print('request.form:')
+            print(request.form)
+        except Exception as error:
+            print("Exception 1:", error)
+        
         print()
         
         return '', 200
