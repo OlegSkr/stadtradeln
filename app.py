@@ -175,6 +175,9 @@ def exchange_token():
     try:
         athlete_id = authorization_data["athlete"]["id"]
         print(f'athlete_id: {athlete_id}')
+        
+        if 'athlete' in authorization_data:
+            del authorization_data['athlete']
 
         save_json(athlete_id, authorization_data)
     except Exception as error:
