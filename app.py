@@ -1,4 +1,4 @@
-import os, sys, json, requests, re
+import os, sys, json, requests, copy, re
 from flask import Flask, request, render_template
 from pathlib import Path
 from datetime import datetime
@@ -104,12 +104,12 @@ def get_stadtradeln_contents() -> dict:
     
     response:str = session.get(stadtradeln_url)
     
-    contents = response.text.copy()
+    contents = copy.copy(response.text)
+    
     with open("/workspace/contents.html", "w") as file:
         file.write(contents)
         
     return contents
-
 
 @app.route('/')
 def hello_world():
