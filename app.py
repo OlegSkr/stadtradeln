@@ -1,5 +1,5 @@
 import os, sys, json, requests, copy, re
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect
 from pathlib import Path
 from datetime import datetime
 
@@ -85,7 +85,7 @@ def create_entry(sr_username, sr_password, entry_date, route_time, route_distanc
     
         session_cookie, user_id = login_stadtradeln(sr_username, sr_password)
         
-        add_command = f"curl 'https://api.stadtradeln.de/v1/kmbook/{user_id}/add?sr_api_key=aeKie7iiv6ei' "
+        add_command = f"curl -is 'https://api.stadtradeln.de/v1/kmbook/{user_id}/add?sr_api_key=aeKie7iiv6ei' "
         add_command += f"-H 'Cookie: {session_cookie}' "
         add_command += f"--data-raw 'entry_id=0&route_movebis_id=&route_is_in_city=0&route_persons=1&route_tracks=1&route_distance={route_distance}&entry_date={entry_date}&route_time={route_time}&route_comment={route_comment}'"
         print(add_command)
@@ -152,6 +152,7 @@ def exchange_token():
 
     print()
     print('/exchange_token')
+    print()
 
     error = request.args.get('error')
     code = request.args.get('code')
@@ -179,8 +180,32 @@ def exchange_token():
     except Exception as error:
         print("An exception occurred:", error)
 
+    return redirect(f'/connect_stadtradeln?athlete_id={athlete_id}', code=302)
 
-    return '', 200
+@app.route('/connect_stadtradeln',  methods=['GET', 'POST'])
+def connect_stadtradeln():
+    
+    if request.method == 'GET':
+        
+        print()
+        print('GET')
+        print('/connect_stadtradeln')
+        print()
+    
+        athlete_id = request.args.get('athlete_id')
+        print(f'athlete_id: {athlete_id}')
+        
+        return render_template('stadtradeln.html', athlete_id=athlete_id)
+        
+    elif request.method == 'POST':
+    
+        print()
+        print('POST')
+        print('/connect_stadtradeln')
+        print()
+        print(request.data)
+        
+        return '', 200
 
 def get_oauth_token(authorization_code:str) -> dict:
 
