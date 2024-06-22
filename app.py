@@ -5,23 +5,23 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-print
-print
-print
+print()
+print()
+print()
 
 try:
     strava_url_oauth_token = 'https://www.strava.com/oauth/token'
     strava_url_activities = 'https://www.strava.com/api/v3/activities'
     print(f'strava_url_oauth_token: {strava_url_oauth_token}')
     print(f'strava_url_activities: {strava_url_activities}')
-    print
+    print()
 except Exception as error:
     print("Exception 1:", error)
 
 try:
     path_file = Path(sys.path[0])
     print(f'path_file: {path_file}')
-    print
+    print()
 
     datapath = f'{path_file}/data'
 except Exception as error:
@@ -40,83 +40,104 @@ def save_json(filename:str, json_data:dict):
 try:
     client_id = os.environ["client_id"]
     print(f'client_id: {client_id}')
-    print
+    print()
 
     client_secret = os.environ["client_secret"]
     print(f'client_secret: {client_secret}')
-    print
+    print()
 
     verify_token = os.environ["verify_token"]
     print(f'verify_token: {verify_token}')
+    print()
     
     sr_username = os.environ["sr_username"]
     print(f'sr_username: {sr_username}')
-    print
+    print()
 
     sr_password = os.environ["sr_password"]
     print(f'sr_password: {sr_password}')
+    print()
     
 except Exception as error:
     print("Exception 3:", error)
 
-print
-print
-print
+print()
+print()
+print()
 
 @app.route('/test')
 def test():
-    print
+    print()
     print('/test')
-    print
+    print()
 
+    entry_date = '22.06.2024'
+    route_time = '23:00'
+    route_comment = 'send from strava'
+    route_distance = '21'
+    
+    create_entry(sr_username, sr_password, entry_date, route_time, route_distance, route_comment)
+
+    return '', 200
+    
+def create_entry(sr_username, sr_password, entry_date, route_time, route_distance, route_comment):
     try:
-        contents = get_stadtradeln_contents()
-        print('contents received, length: ')
-        print(len(contents))
-        print
-        result = re.search(r"https:\/\/api.stadtradeln.de\/v1\/kmbook\/(\b\d+)\/add", contents)
-        print('re.search done, groups:')
-        print(result.groups())
-        print
-        print('group 1:')
-        print(result.group(1))
-        print
+    
+        session_cookie, user_id = login_stadtradeln(sr_username, sr_password)
+        
+        add_command = f"curl 'https://api.stadtradeln.de/v1/kmbook/{user_id}/add?sr_api_key=aeKie7iiv6ei' "
+        add_command += f"-H 'Cookie: {session_cookie}' "
+        add_command += f"--data-raw 'entry_id=0&route_movebis_id=&route_is_in_city=0&route_persons=1&route_tracks=1&route_distance={route_distance}&entry_date={entry_date}&route_time={route_time}&route_comment={route_comment}'"
+        print(add_command)
+        add_output = os.popen(add_command).read().strip()
+        print()
+        print('add_output: ')
+        add_json = json.loads(add_output)
+        print(add_json['status'])
     except Exception as error:
         print("Exception 4:", error)
 
+#def login_stadtradeln(username:str, password:str) -> tuple[str, str] | None:
+def login_stadtradeln(username:str, password:str):
 
-    return '', 200
+    login_command = f"curl -is -X POST 'https://login.stadtradeln.de/user/dashboard?L=0&sr_api_key=aeKie7iiv6ei&sr_login_check=1' -d 'sr_auth_action=login&sr_prevent_empty_submit=1&sr_username={username}&sr_password={password}' | grep PHPSESSID" + " | awk {'print $2}'"
+    print(login_command)
+    login_output = os.popen(login_command).read().strip()
+    print()
+    print('login_output: ')
+    print(login_output)
 
-def get_stadtradeln_contents() -> dict:
-
-    stadtradeln_url = 'https://login.stadtradeln.de/user/kmbook?L=0'
-
-    session = requests.session()
-
-    url = f'{stadtradeln_url}&sr_api_key=aeKie7iiv6ei&sr_login_check=1&sr_username={sr_username}&sr_password={sr_password}&sr_auth_action=login'
-
-    response:dict = session.get(url)
-
-    print(response.headers)
-    print(response.text)
-
-    response.raise_for_status()
+    kmbook_command = f"curl -is 'https://login.stadtradeln.de/user/kmbook?L=0' -H 'Cookie: {login_output}' | grep 'add?sr_api_key'"
+    print(kmbook_command)
+    kmbook_output = os.popen(kmbook_command).read().strip()
+    print()
+    print('kmbook_output: ')
+    print(kmbook_output)
     
-    response:str = session.get(stadtradeln_url)
+    print('kmbook_output received, length: ')
+    print(len(kmbook_output))
+    print()
+    result = re.search(r"https:\/\/api.stadtradeln.de\/v1\/kmbook\/(\b\d+)\/add", kmbook_output)
+    print('re.search done, groups:')
+    print(result.groups())
+    print()
+    print('group 1:')
+    print(result.group(1))
+    print()
+    sr_id = result.group(1)
+    print(f'sr_id: {sr_id}')
     
-    contents = copy.copy(response.text)
-    
-    with open("/workspace/contents.html", "w") as file:
-        file.write(contents)
-        
-    return contents
+    # Session Cookie and User ID
+    return login_output, sr_id
+
+# test()
 
 @app.route('/')
 def hello_world():
 
-    print
+    print()
     print('/hello world')
-    print
+    print()
     try:
         print(f'client_id: {client_id}')
         print(f'client_secret: {client_secret}')
@@ -129,7 +150,7 @@ def hello_world():
 @app.route('/exchange_token', methods=['GET'])
 def exchange_token():
 
-    print
+    print()
     print('/exchange_token')
 
     error = request.args.get('error')
@@ -174,7 +195,7 @@ def get_oauth_token(authorization_code:str) -> dict:
 @app.route('/webhook', methods=['GET', 'POST'])
 def webhook():
 
-    print
+    print()
     print('/webhook')
 
     if request.method == 'GET':
@@ -291,12 +312,12 @@ def get_access_token(athlete_id: str):
 
 def update_tokens(authorization_data:dict, filename:str) -> str:
 
-    print
+    print()
     print('def update_tokens:')
-    print
+    print()
     print('authorization_data: ')
     print(authorization_data)
-    print
+    print()
 
     access_token = authorization_data['access_token']
 
@@ -314,7 +335,7 @@ def update_tokens(authorization_data:dict, filename:str) -> str:
         tokens = response.json()
         print('tokens: ')
         print(tokens)
-        print
+        print()
 
         # merge authorization_data with new tokens
         authorization_data.update(tokens)
