@@ -1,4 +1,4 @@
-import os, sys, json, requests
+import os, sys, json, requests, re
 from flask import Flask, request, render_template
 from pathlib import Path
 from datetime import datetime
@@ -56,6 +56,42 @@ except Exception as error:
 print
 print
 print
+
+@app.route('/test')
+def test():
+    print
+    print('/test')
+    print
+
+    try:
+        contents = get_stadtradeln_contents()
+        print(contents)
+        result = re.search(r"https:\/\/api.stadtradeln.de\/v1\/kmbook\/(\b\d+)\/add", contents)
+        print(result.group(1))
+    except Exception as error:
+        print("Exception:", error)
+
+
+    return '', 200
+
+def get_stadtradeln_contents() -> dict:
+
+    stadtradeln_url = 'https://login.stadtradeln.de/user/kmbook?L=0'
+
+    session = requests.session()
+
+    url = f'{stadtradeln_url}&sr_api_key=aeKie7iiv6ei&sr_login_check=1&sr_username={sr_username}&sr_password={sr_password}&sr_auth_action=login'
+
+    response:dict = session.get(url)
+
+    print(response.headers)
+    print(response.text)
+
+    response.raise_for_status()
+
+    response:str = session.get(stadtradeln_url)
+
+    return response.text
 
 
 @app.route('/')
