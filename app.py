@@ -1,4 +1,4 @@
-import sys, json, requests
+import os, sys, json, requests
 from flask import Flask, request, render_template
 from pathlib import Path
 from datetime import datetime
@@ -8,6 +8,8 @@ app = Flask(__name__)
 print
 print
 print
+
+print(os.environ)
 
 try:
     strava_url_oauth_token = 'https://www.strava.com/oauth/token'
@@ -38,23 +40,15 @@ def save_json(filename:str, json_data:dict):
             ensure_ascii = False)
 
 try:
-    environ = get_json('.env')
-    print('environ:')
-    print(environ)
-    print
-except Exception as error:
-    print("Exception 3:", error)
-
-try:
-    client_id = environ["client_id"]
+    client_id = os.environ["client_id"]
     print(f'client_id: {client_id}')
     print
 
-    client_secret = environ["client_secret"]
+    client_secret = os.environ["client_secret"]
     print(f'client_secret: {client_secret}')
     print
 
-    verify_token = environ["verify_token"]
+    verify_token = os.environ["verify_token"]
     print(f'verify_token: {verify_token}')
 except Exception as error:
     print("Exception 4:", error)
