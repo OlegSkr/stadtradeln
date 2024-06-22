@@ -205,30 +205,33 @@ def connect_stadtradeln():
         print()
         
         try:
-            print('request.args:')
-            print(request.args)
-        except Exception as error:
-            print("Exception 1:", error)
             
-        try:
-            print('request.data:')
-            print(request.data)
-        except Exception as error:
-            print("Exception 1:", error)
-        
-        try:
-            print('request.json:')
-            print(request.json)
-        except Exception as error:
-            print("Exception 1:", error)
-        
-        try:
             print('request.form:')
             print(request.form)
+            print()
+            
+            athlete_id = request.form['athlete_id']
+            sr_username = request.form['username']
+            sr_password = request.form['password']
+            
+            print(f'athlete_id: {athlete_id}')
+            print(f'sr_username: {sr_username}')
+            print(f'sr_password: {sr_password}')
+            print()
+            
+            athlete_data = get_json(athlete_id)
+            
+            athlete_data['sr_username'] = sr_username
+            athlete_data['sr_password'] = sr_password
+
+            try:
+                # save merged authorization_data with tokens
+                save_json(athlete_id, athlete_data)
+            except Exception as error2:
+                print("An exception occurred:", error2)
+            
         except Exception as error:
-            print("Exception 1:", error)
-        
-        print()
+            print("Exception:", error)
         
         return '', 200
 
