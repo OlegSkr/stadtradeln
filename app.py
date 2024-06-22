@@ -203,7 +203,11 @@ def connect_stadtradeln():
         print('POST')
         print('/connect_stadtradeln')
         print()
+        print(request.args)
         print(request.data)
+        print(request.json)
+        print(request.form)
+        print()
         
         return '', 200
 
