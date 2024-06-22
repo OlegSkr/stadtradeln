@@ -9,8 +9,6 @@ print
 print
 print
 
-print(os.environ)
-
 try:
     strava_url_oauth_token = 'https://www.strava.com/oauth/token'
     strava_url_activities = 'https://www.strava.com/api/v3/activities'
@@ -50,8 +48,16 @@ try:
 
     verify_token = os.environ["verify_token"]
     print(f'verify_token: {verify_token}')
+    
+    sr_username = os.environ["sr_username"]
+    print(f'sr_username: {sr_username}')
+    print
+
+    sr_password = os.environ["sr_password"]
+    print(f'sr_password: {sr_password}')
+    
 except Exception as error:
-    print("Exception 4:", error)
+    print("Exception 3:", error)
 
 print
 print
