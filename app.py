@@ -71,11 +71,18 @@ def test():
 
     try:
         contents = get_stadtradeln_contents()
-        print(contents)
+        print('contents received, length: ')
+        print(len(contents))
+        print
         result = re.search(r"https:\/\/api.stadtradeln.de\/v1\/kmbook\/(\b\d+)\/add", contents)
+        print('re.search done, groups:')
+        print(result.groups())
+        print
+        print('group 1:')
         print(result.group(1))
+        print
     except Exception as error:
-        print("Exception:", error)
+        print("Exception 4:", error)
 
 
     return '', 200
