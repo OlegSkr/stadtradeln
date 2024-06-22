@@ -346,15 +346,24 @@ def webhook():
             try:
                 activity_data = get_activity_data(access_token, object_id)
                 print(f'activity_data: {activity_data}')
-
-                # Temporarily saving activity data as backup
-                save_json(f'{owner_id}_{object_id}', activity_data)
-
+                
+                athlete_data = get_json(owner_id)
+                sr_username = athlete_data['sr_username']
+                sr_password = athlete_data['sr_password']
+                
+                entry_date = now.strftime("%d.%m.%Y")
+                route_time = time
+                
                 #####################################################
                 #                                                   #
                 # TODO: Parse activity and upload to stadtradeln.de #
                 #                                                   #
                 #####################################################
+
+                route_distance = athlete_data['DISTANCE']
+                route_comment = athlete_data['TITLE']
+                
+                create_entry(sr_username, sr_password, entry_date, route_time, route_distance, route_comment)
 
             except Exception as error:
                 print("An exception occurred:", error)
