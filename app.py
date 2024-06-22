@@ -360,8 +360,9 @@ def webhook():
                 #                                                   #
                 #####################################################
 
-                route_distance = athlete_data['DISTANCE']
-                route_comment = athlete_data['TITLE']
+                route_distance = athlete_data['distance']
+                route_distance /= 1000 # TODO: convert to integer
+                route_comment = athlete_data['name']
                 
                 create_entry(sr_username, sr_password, entry_date, route_time, route_distance, route_comment)
 
