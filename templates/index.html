@@ -2,23 +2,51 @@
 <html lang="de">
 <head>
 <link rel="icon" href="/static/img/stravas.png">
-<title>Stadtradeln - Strava Synchronizer</title>
+<title>Stadtradeln - Strava</title>
 <meta charset="utf-8">
 </head>
 <body>
 <br />
-App to replace manual input for<br />
+This App is intended to replace the manual input for <a href="https://www.stadtradeln.de/">https://www.stadtradeln.de/</a><br />
 <br />
-<a href="https://www.stadtradeln.de/">https://www.stadtradeln.de/</a><br />
 <br />
-If you want this app to do it for you - click the following link:<br />
+<b>Step 1:</b><br />
 <br />
-<a href="http://www.strava.com/oauth/authorize?client_id=59281&response_type=code&redirect_uri=https://strava-stadtradeln.koyeb.app/exchange_token&approval_prompt=force&scope=activity:read" target="_blank">CONNECT STRAVA TO STADTRADELN</a><br />
+<a href="http://www.strava.com/oauth/authorize?client_id=59281&response_type=code&redirect_uri=https://strava-stadtradeln.koyeb.app/exchange_token&approval_prompt=force&scope=activity:read" target="_blank">
+<img src="/static/img/btn_strava_connectwith_orange.png" /></a><br />
 <br />
 This App needs the permission to read the activities information, in order to get the number of kilometers.<br />
+What happens with your data you can see <a href="https://github.com/OlegSkr/stadtradeln/blob/main/app.py#L342" target="_blank">here</a><br />
 <br />
-Source Code of this App can be found here:
-<a href="https://github.com/OlegSkr/stadtradeln" target="_blank">GitHub</a><br />
+<br />
+<b>Step 2:</b><br />
+<br />
+Add your credentials for Stadtradeln<br />
+<br />
+<img src="/static/img/logo-sr.svg" style="width: 230px" alt="Stadtradeln Logo">
+<br />
+Your credentials are saved <a href="https://github.com/OlegSkr/stadtradeln/blob/main/app.py#L226" target="_blank">here</a><br />
+And are used to login <a href="https://github.com/OlegSkr/stadtradeln/blob/main/app.py#L103" target="_blank">here</a>, when new Strava Activity is being created.<br />
+<br />
+<br />
+ToDos:
+<ol>
+<li>Persist the data between App redeployments</li>
+<li>Encrypt the data at rest</li>
+<li>Add support for editing and deleting activities</li>
+<li>Do better exception handling, especially in case of 4XX HTTP responses</li>
+<li>Clean up the code</li>
+<li>Use logging instead of stdout</li>
+<li>Do not write critical data into logs (or only on the TRACE level)</li>
+<li>Replace bash curl calls with python requests if possible</li>
+<li>Upload more detailed data to Stadtradeln if user agrees and Stadtradeln allows to do that</li>
+</ol>
+<br />
+Source Code of this App can be found here: <a href="https://github.com/OlegSkr/stadtradeln" target="_blank">GitHub</a><br />
+<br />
+App is hosted through the free plan at <a href="https://www.koyeb.com/" target="_blank">Koyeb</a> platform, many thanks for such a nice service!<br />
+<br />
+App Deployment is done by using automated <a href="https://github.com/OlegSkr/stadtradeln/deployments" target="_blank">GitHub Deployments</a>, so no code manipulation can be done in between<br />
 <br />
 </body>
 </html>
