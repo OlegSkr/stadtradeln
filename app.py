@@ -85,7 +85,7 @@ def create_entry(sr_username, sr_password, entry_date, route_time, route_distanc
     
         session_cookie, user_id = login_stadtradeln(sr_username, sr_password)
         
-        add_command = f"curl -is 'https://api.stadtradeln.de/v1/kmbook/{user_id}/add?sr_api_key=aeKie7iiv6ei' "
+        add_command = f"curl -s 'https://api.stadtradeln.de/v1/kmbook/{user_id}/add?sr_api_key=aeKie7iiv6ei' "
         add_command += f"-H 'Cookie: {session_cookie}' "
         add_command += f"--data-raw 'entry_id=0&route_movebis_id=&route_is_in_city=0&route_persons=1&route_tracks=1&route_distance={route_distance}&entry_date={entry_date}&route_time={route_time}&route_comment={route_comment}'"
         print(add_command)
@@ -138,12 +138,6 @@ def hello_world():
     print()
     print('/hello world')
     print()
-    try:
-        print(f'client_id: {client_id}')
-        print(f'client_secret: {client_secret}')
-        print(f'verify_token: {verify_token}')
-    except Exception as error:
-        print("Exception 5:", error)
 
     return render_template('index.html')
 
@@ -286,23 +280,6 @@ def webhook():
         try:
             event_time = request.json.get("event_time")
             print(f'event_time: {event_time}')
-
-            now = datetime.fromtimestamp(event_time)
-
-            year = now.strftime("%Y")
-            print("year:", year)
-
-            month = now.strftime("%m")
-            print("month:", month)
-
-            day = now.strftime("%d")
-            print("day:", day)
-
-            time = now.strftime("%H:%M:%S")
-            print("time:", time)
-
-            date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
-            print("date and time:",date_time)
         except Exception as error:
             print("An exception occurred:", error)
 
@@ -345,24 +322,28 @@ def webhook():
         if object_type == 'activity':
             try:
                 activity_data = get_activity_data(access_token, object_id)
-                print(f'activity_data: {activity_data}')
+                print(f'activity_data len: {len(activity_data)}')
                 
                 athlete_data = get_json(owner_id)
                 sr_username = athlete_data['sr_username']
                 sr_password = athlete_data['sr_password']
                 
-                entry_date = now.strftime("%d.%m.%Y")
-                route_time = time
+                start_date = activity_data['start_date']
+                print(f'start_date: {start_date}')
                 
-                #####################################################
-                #                                                   #
-                # TODO: Parse activity and upload to stadtradeln.de #
-                #                                                   #
-                #####################################################
-
-                route_distance = athlete_data['distance']
-                route_distance /= 1000 # TODO: convert to integer
-                route_comment = athlete_data['name']
+                date_time_obj = datetime.strptime(start_date[:20], "%Y-%m-%dT%H:%M:%SZ")
+    
+                entry_date = date_time_obj.strftime("%d.%m.%Y")
+                route_time = date_time_obj.strftime("%H:%M:%S")
+                
+                print(f'entry_date: {entry_date}')
+                print(f'route_time: {route_time}')
+                
+                route_distance = int(int(activity_data['distance']) / 1000)
+                print(f'route_distance: {route_distance}')
+                
+                route_comment = activity_data['name']
+                print(f'route_comment: {route_comment}')
                 
                 create_entry(sr_username, sr_password, entry_date, route_time, route_distance, route_comment)
 
