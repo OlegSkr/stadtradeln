@@ -131,9 +131,6 @@ def connect_stadtradeln():
         return render_template('stadtradeln.html', athlete_id=athlete_id)
         
     elif request.method == 'POST':
-    
-        
-        
         try:
             
             athlete_id = request.form['athlete_id']
@@ -188,6 +185,7 @@ def webhook():
             return '{"hub.challenge": "' + challenge + '"}'
         else:
             return 'Forbidden', 403
+            
     elif request.method == 'POST':
 
         print('POST /webhook')
@@ -303,4 +301,5 @@ def get_activity_data(access_token:str, activity_id:str) -> dict:
     response.raise_for_status()
 
     activity_data = response.json()
+    
     return activity_data
