@@ -53,9 +53,15 @@ def save_json(id:str, json_data:dict):
         "data": f"{utf8encMessage}"
     }
     
+    # TODO: handle already exists case better
     try:
-        result = mongodb.update_one({ "_id": f"{id}"}, document, upsert=True)
-        print(f"Upserted document ID: {result.inserted_id}")
+        mongodb.delete_one({ "_id": f"{id}"})
+    except Exception as error:
+        print("MongoDB delete Exception (CAN BE IGNORED):", error)
+
+    try:
+        result = mongodb.insert_one(document)
+        print(f"Inserted document ID: {result.inserted_id}")
     except Exception as error:
         print("MongoDB Exception:", error)
     
