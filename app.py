@@ -1,7 +1,10 @@
-import os, sys, json, requests, copy, re
+import os, sys, json, requests, copy, re, codecs
 from flask import Flask, request, render_template, redirect
 from pathlib import Path
 from datetime import datetime
+from pymongo import MongoClient
+from cryptography.fernet import Fernet
+
 
 app = Flask(__name__)
 
@@ -27,15 +30,41 @@ try:
 except Exception as error:
     print("Exception 2:", error)
 
-def get_json(filename:str) -> dict:
-    with open(f'{datapath}/{filename}.json') as read_file:
-        json_data = json.load(read_file)
+def get_json(id:str) -> dict:
+    document = mongodb.find_one({ "_id": f"{id}"})
+    # TODO: Handle not found case
+    utf8encMessage = document["data"]
+    encMessage = codecs.encode(utf8encMessage, 'utf-8')
+    print(f'encMessage: {encMessage}')
+    decMessage = fernet.decrypt(encMessage).decode()
+    print("decrypted string: ", decMessage)
+    json_data = json.loads(decMessage)
+    print('json_data: ', json_data)
+    
     return json_data
 
-def save_json(filename:str, json_data:dict):
-    with open(f'{datapath}/{filename}.json', 'w') as out_file:
-        json.dump(json_data, out_file, sort_keys = True, indent = 4,
-            ensure_ascii = False)
+def save_json(id:str, json_data:dict):
+    message = json.dumps(json_data)
+    print('message: ', message)
+    encMessage = fernet.encrypt(message.encode())
+    utf8encMessage = encMessage.decode(encoding='utf-8', errors='strict')
+    document = {
+        "_id": f"{id}",
+        "data": f"{utf8encMessage}"
+    }
+    
+    # TODO: handle already exists case better
+    try:
+        mongodb.delete_one({ "_id": f"{id}"})
+    except Exception as error:
+        print("MongoDB delete Exception (CAN BE IGNORED):", error)
+        
+    try:
+        result = mongodb.insert_one(document)
+        print(f"Inserted document ID: {result.inserted_id}")
+    except Exception as error:
+        print("MongoDB Exception:", error)
+    
 
 try:
     client_id = os.environ["client_id"]
@@ -58,28 +87,23 @@ try:
     print(f'sr_password: {sr_password}')
     print()
     
+    encryption_key = codecs.encode(os.environ["encryption_key"], 'utf-8')
+    print(f'encryption_key: {encryption_key}')
+    print()
+    fernet = Fernet(encryption_key)
+    
+    mongodb_connection_string = os.environ["mongodb_connection_string"]
+    print(f'mongodb_connection_string: {mongodb_connection_string}')
+    print()
+    mongodb = MongoClient("mongodb_connection_string")['stadtradeln']['credentials']
+    
 except Exception as error:
     print("Exception 3:", error)
-
-print()
-print()
-print()
-
-@app.route('/test')
-def test():
-    print()
-    print('/test')
-    print()
-
-    entry_date = '22.06.2024'
-    route_time = '23:00'
-    route_comment = 'send from strava'
-    route_distance = '21'
     
-    create_entry(sr_username, sr_password, entry_date, route_time, route_distance, route_comment)
+print()
+print()
+print()
 
-    return '', 200
-    
 def create_entry(sr_username, sr_password, entry_date, route_time, route_distance, route_comment):
     try:
     
@@ -129,8 +153,6 @@ def login_stadtradeln(username:str, password:str):
     
     # Session Cookie and User ID
     return login_output, sr_id
-
-# test()
 
 @app.route('/')
 def hello_world():
