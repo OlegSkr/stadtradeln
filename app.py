@@ -53,15 +53,9 @@ def save_json(id:str, json_data:dict):
         "data": f"{utf8encMessage}"
     }
     
-    # TODO: handle already exists case better
     try:
-        mongodb.delete_one({ "_id": f"{id}"})
-    except Exception as error:
-        print("MongoDB delete Exception (CAN BE IGNORED):", error)
-        
-    try:
-        result = mongodb.insert_one(document)
-        print(f"Inserted document ID: {result.inserted_id}")
+        result = mongodb.update_one({ "_id": f"{id}"}, document, upsert=True)
+        print(f"Upserted document ID: {result.inserted_id}")
     except Exception as error:
         print("MongoDB Exception:", error)
     
@@ -95,7 +89,7 @@ try:
     mongodb_connection_string = os.environ["mongodb_connection_string"]
     print(f'mongodb_connection_string: {mongodb_connection_string}')
     print()
-    mongodb = MongoClient("mongodb_connection_string")['stadtradeln']['credentials']
+    mongodb = MongoClient(mongodb_connection_string)['stadtradeln']['credentials']
     
 except Exception as error:
     print("Exception 3:", error)
