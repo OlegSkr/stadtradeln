@@ -52,8 +52,6 @@ def save_json(id:str, json_data:dict):
 client_id = os.environ["client_id"]
 client_secret = os.environ["client_secret"]
 verify_token = os.environ["verify_token"]
-sr_username = os.environ["sr_username"]
-sr_password = os.environ["sr_password"]
 encryption_key = codecs.encode(os.environ["encryption_key"], 'utf-8')
 fernet = Fernet(encryption_key)
 mongodb_connection_string = os.environ["mongodb_connection_string"]
@@ -75,13 +73,29 @@ def create_entry(sr_username, sr_password, entry_date, route_time, route_distanc
 
 def login_stadtradeln(username:str, password:str):
 
-    login_command = f"curl -is -X POST 'https://login.stadtradeln.de/user/dashboard?L=0&sr_api_key=aeKie7iiv6ei&sr_login_check=1' -d 'sr_auth_action=login&sr_prevent_empty_submit=1&sr_username={username}&sr_password={password}' | grep PHPSESSID" + " | awk {'print $2}'"
-    # print(login_command)
+    print('username:', username)
+    print('password:', password)
+    
+    # handling $3 variables in bash, through escaping $ character
+    sr_username = username.replace('$', '\$')
+    print('sr_username:', sr_username)
+    
+    sr_password = password.replace('$', '\$')
+    print('sr_password:', sr_password)
+    
+    login_command = f"curl -is -X POST 'https://login.stadtradeln.de/user/dashboard?L=0&sr_api_key=aeKie7iiv6ei&sr_login_check=1' -d 'sr_auth_action=login&sr_prevent_empty_submit=1&sr_username={sr_username}&sr_password={sr_password}' | grep PHPSESSID" + " | awk {'print $2}'"
+    print('login_command:')
+    print(login_command)
     login_output = os.popen(login_command).read().strip()
+    print('login_output:')
+    print(login_output)
 
     kmbook_command = f"curl -is 'https://login.stadtradeln.de/user/kmbook?L=0' -H 'Cookie: {login_output}' | grep 'add?sr_api_key'"
-    # print(kmbook_command)
+    print('kmbook_command:')
+    print(kmbook_command)
     kmbook_output = os.popen(kmbook_command).read().strip()
+    print('kmbook_output:')
+    print(kmbook_output)
     
     result = re.search(r"https:\/\/api.stadtradeln.de\/v1\/kmbook\/(\b\d+)\/add", kmbook_output)
     sr_id = result.group(1)
