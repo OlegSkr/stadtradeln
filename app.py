@@ -77,10 +77,10 @@ def login_stadtradeln(username:str, password:str):
     print('password:', password)
     
     # handling $3 variables in bash, through escaping $ character
-    sr_username = username.replace('$', '\$')
+    sr_username = username.replace('$', '\\$')
     print('sr_username:', sr_username)
     
-    sr_password = password.replace('$', '\$')
+    sr_password = password.replace('$', '\\$')
     print('sr_password:', sr_password)
     
     login_command = f"curl -is -X POST 'https://login.stadtradeln.de/user/dashboard?L=0&sr_api_key=aeKie7iiv6ei&sr_login_check=1' -d 'sr_auth_action=login&sr_prevent_empty_submit=1&sr_username={sr_username}&sr_password={sr_password}' | grep PHPSESSID" + " | awk {'print $2}'"
