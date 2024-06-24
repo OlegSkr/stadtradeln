@@ -4,6 +4,7 @@ from pathlib import Path
 from datetime import datetime
 from pymongo import MongoClient
 from cryptography.fernet import Fernet
+import urllib.parse
 
 
 app = Flask(__name__)
@@ -76,11 +77,10 @@ def login_stadtradeln(username:str, password:str):
     print('username:', username)
     print('password:', password)
     
-    # handling $3 variables in bash, through escaping $ character
-    sr_username = username.replace('$', '\\$')
+    sr_username = urllib.parse.quote(username)
     print('sr_username:', sr_username)
     
-    sr_password = password.replace('$', '\\$')
+    sr_password = urllib.parse.quote(password)
     print('sr_password:', sr_password)
     
     login_command = f"curl -is -X POST 'https://login.stadtradeln.de/user/dashboard?L=0&sr_api_key=aeKie7iiv6ei&sr_login_check=1' -d 'sr_auth_action=login&sr_prevent_empty_submit=1&sr_username={sr_username}&sr_password={sr_password}' | grep PHPSESSID" + " | awk {'print $2}'"
