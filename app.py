@@ -1,10 +1,28 @@
-import os, sys, json, requests, copy, re, codecs
+import os, sys, json, requests, copy, re, codecs, logging, locale, urllib.parse
 from flask import Flask, request, render_template, redirect
 from pathlib import Path
 from datetime import datetime
 from pymongo import MongoClient
 from cryptography.fernet import Fernet
-import urllib.parse
+
+# Configure the logging
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
+# Create a logger
+logger = logging.getLogger(__name__)
+
+def set_german_locale():
+    try:
+        # Set the locale to German (Germany)
+        locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
+    except locale.Error as error:
+        logger.error("Error: Locale setting failed. Make sure the German locale is installed on your system: %s", error)
+        return False
+    return True
+
+set_german_locale()
 
 
 app = Flask(__name__)
@@ -16,21 +34,29 @@ path_file = Path(sys.path[0])
 datapath = f'{path_file}/data'
 
 def get_json(id:str) -> dict:
+    
     document = mongodb.find_one({ "_id": f"{id}"})
+    
     # TODO: Handle not found case
+    
     utf8encMessage = document["data"]
+    
     encMessage = codecs.encode(utf8encMessage, 'utf-8')
-    # print(f'encMessage: {encMessage}')
+    logger.debug(f'encMessage: {encMessage}')
+    
     decMessage = fernet.decrypt(encMessage).decode()
-    # print("decrypted string: ", decMessage)
+    logger.debug(f'decrypted string: {decMessage}')
+    
     json_data = json.loads(decMessage)
-    # print('json_data: ', json_data)
+    logger.debug(f'json_data: {json_data}')
     
     return json_data
 
 def save_json(id:str, json_data:dict):
+
     message = json.dumps(json_data)
-    # print('message: ', message)
+    logger.debug(f'message: {message}')
+    
     encMessage = fernet.encrypt(message.encode())
     utf8encMessage = encMessage.decode(encoding='utf-8', errors='strict')
     document = {
@@ -42,13 +68,15 @@ def save_json(id:str, json_data:dict):
     try:
         mongodb.delete_one({ "_id": f"{id}"})
     except Exception as error:
-        print("MongoDB delete Exception (CAN BE IGNORED):", error)
+        logger.error("MongoDB delete Exception (CAN BE IGNORED): %s", error)
 
     try:
+        
         result = mongodb.insert_one(document)
-        print(f"Inserted document ID: {result.inserted_id}")
+        logger.info(f'Inserted document ID: {result.inserted_id}')
+        
     except Exception as error:
-        print("MongoDB Exception:", error)
+        logger.error("MongoDB Exception: %s", error)
     
 client_id = os.environ["client_id"]
 client_secret = os.environ["client_secret"]
@@ -59,6 +87,7 @@ mongodb_connection_string = os.environ["mongodb_connection_string"]
 mongodb = MongoClient(mongodb_connection_string)['stadtradeln']['credentials']
 
 def create_entry(sr_username, sr_password, entry_date, route_time, route_distance, route_comment):
+    
     try:
     
         session_cookie, user_id = login_stadtradeln(sr_username, sr_password)
@@ -66,40 +95,44 @@ def create_entry(sr_username, sr_password, entry_date, route_time, route_distanc
         add_command = f"curl -s 'https://api.stadtradeln.de/v1/kmbook/{user_id}/add?sr_api_key=aeKie7iiv6ei' "
         add_command += f"-H 'Cookie: {session_cookie}' "
         add_command += f"--data-raw 'entry_id=0&route_movebis_id=&route_is_in_city=0&route_persons=1&route_tracks=1&route_distance={route_distance}&entry_date={entry_date}&route_time={route_time}&route_comment={route_comment}'"
-        # print(add_command)
+        logger.debug("add_command: %s", add_command)
+        
         add_output = os.popen(add_command).read().strip()
         add_json = json.loads(add_output)
+        
     except Exception as error:
-        print("Exception 4:", error)
+        logger.error("Create Entry Exception: %s", error)
 
 def login_stadtradeln(username:str, password:str):
 
-    print('username:', username)
-    print('password:', password)
-    
+    logger.debug("username: %s", username)
+    logger.debug("password: %s", password)
+
     sr_username = urllib.parse.quote(username)
-    print('sr_username:', sr_username)
+    logger.debug("sr_username: %s", sr_username)
     
     sr_password = urllib.parse.quote(password)
-    print('sr_password:', sr_password)
+    logger.debug("sr_password: %s", sr_password)
     
     login_command = f"curl -is -X POST 'https://login.stadtradeln.de/user/dashboard?L=0&sr_api_key=aeKie7iiv6ei&sr_login_check=1' -d 'sr_auth_action=login&sr_prevent_empty_submit=1&sr_username={sr_username}&sr_password={sr_password}' | grep PHPSESSID" + " | awk {'print $2}'"
-    print('login_command:')
-    print(login_command)
+    logger.debug("login_command: ")
+    logger.debug(login_command)
+    
     login_output = os.popen(login_command).read().strip()
-    print('login_output:')
-    print(login_output)
+    logger.debug("login_output: ")
+    logger.debug(login_output)
 
     kmbook_command = f"curl -is 'https://login.stadtradeln.de/user/kmbook?L=0' -H 'Cookie: {login_output}' | grep 'add?sr_api_key'"
-    print('kmbook_command:')
-    print(kmbook_command)
+    logger.debug("kmbook_command: ")
+    logger.debug(kmbook_command)
+    
     kmbook_output = os.popen(kmbook_command).read().strip()
-    print('kmbook_output:')
-    print(kmbook_output)
+    logger.debug("kmbook_output: ")
+    logger.debug(kmbook_output)
     
     result = re.search(r"https:\/\/api.stadtradeln.de\/v1\/kmbook\/(\b\d+)\/add", kmbook_output)
     sr_id = result.group(1)
-    print(f'sr_id: {sr_id}')
+    logger.debug(f'sr_id: {sr_id}')
     
     # Session Cookie and User ID
     return login_output, sr_id
@@ -120,18 +153,18 @@ def exchange_token():
     try:
         authorization_data = get_oauth_token(code)
     except Exception as error:
-        print("An exception occurred:", error)
+        logger.error("Get oAuth Token Exception: %s", error)
 
     try:
         athlete_id = authorization_data["athlete"]["id"]
-        print(f'GET /exchange_token, athlete_id: {athlete_id}')
+        logger.info(f'GET /exchange_token, athlete_id: {athlete_id}')
         
         if 'athlete' in authorization_data:
             del authorization_data['athlete']
 
         save_json(athlete_id, authorization_data)
     except Exception as error:
-        print("An exception occurred:", error)
+        logger.error("Saving authorization data Exception: %s", error)
 
     return redirect(f'/connect_stadtradeln?athlete_id={athlete_id}', code=302)
 
@@ -140,7 +173,7 @@ def connect_stadtradeln():
     
     if request.method == 'GET':
         athlete_id = request.args.get('athlete_id')
-        print(f'GET /connect_stadtradeln, athlete_id: {athlete_id}')
+        logger.info(f'GET /connect_stadtradeln, athlete_id: {athlete_id}')
         
         return render_template('stadtradeln.html', athlete_id=athlete_id)
         
@@ -151,7 +184,7 @@ def connect_stadtradeln():
             sr_username = request.form['username']
             sr_password = request.form['password']
             
-            print(f'POST /connect_stadtradeln, athlete_id: {athlete_id}')
+            logger.info(f'POST /connect_stadtradeln, athlete_id: {athlete_id}')
             
             athlete_data = get_json(athlete_id)
             
@@ -162,10 +195,10 @@ def connect_stadtradeln():
                 # save merged authorization_data with tokens
                 save_json(athlete_id, athlete_data)
             except Exception as error2:
-                print("An exception occurred:", error2)
+                logger.error("Saving merged authorization data Exception: %s", error2)
             
         except Exception as error:
-            print("Exception:", error)
+            logger.error("Updating authorization data Exception: %s", error)
         
         # TODO:
         # render_template('connection_success.html')
@@ -202,22 +235,22 @@ def webhook():
             
     elif request.method == 'POST':
 
-        print('POST /webhook')
+        logger.info('POST /webhook')
 
         try:
             aspect_type = request.json.get("aspect_type")
         except Exception as error:
-            print("An exception occurred:", error)
+            logger.error("aspect_type not found Exception: %s", error)
 
         try:
             object_id = request.json.get("object_id")
         except Exception as error:
-            print("An exception occurred:", error)
+            logger.error("object_id not found Exception: %s", error)
 
         try:
             object_type = request.json.get("object_type")
         except Exception as error:
-            print("An exception occurred:", error)
+            logger.error("object_type not found Exception: %s", error)
 
         if object_type != 'activity' or aspect_type != 'create':
 
@@ -228,15 +261,18 @@ def webhook():
         try:
             owner_id = request.json.get("owner_id")
         except Exception as error:
-            print("An exception occurred:", error)
+            logger.error("owner_id not found Exception: %s", error)
 
         try:
             access_token = get_access_token(owner_id)
         except Exception as error:
-            print("An exception occurred:", error)
+            logger.error("get_access_token Exception: %s", error)
 
         if object_type == 'activity':
             try:
+                
+                logger.info("get_access_token get_activity_data( %s )", object_id)
+                
                 activity_data = get_activity_data(access_token, object_id)
                 
                 athlete_data = get_json(owner_id)
@@ -250,14 +286,33 @@ def webhook():
                 entry_date = date_time_obj.strftime("%d.%m.%Y")
                 route_time = date_time_obj.strftime("%H:%M:%S")
                 
-                route_distance = int(int(activity_data['distance']) / 1000)
+                route_distance = float(float(activity_data['distance']) / 1000)
+                
+                logger.info(f'route_distance: {route_distance}')
+                
+                formatted_distance = f'{route_distance}'
+                try:
+                    # Format the float with two decimal places using the German locale
+                    formatted_distance = locale.format_string("%.2f", route_distance, grouping=True)
+                except Exception as error2:
+                    logger.error("Format string Exception: %s", error2)
+                
+                logger.info(f'formatted_distance: {formatted_distance}')
                 
                 route_comment = activity_data['name']
                 
-                create_entry(sr_username, sr_password, entry_date, route_time, route_distance, route_comment)
+                activity_type = activity_data['type']
+                
+                logger.info(f'activity_type: {activity_type}')
+                
+                # TODO: Check if activity type is Ride
+                if activity_type == 'Ride':
+                    create_entry(sr_username, sr_password, entry_date, route_time, formatted_distance, route_comment)
+                else:
+                    logger.info('Not a bicycle ride, ignoring')
 
             except Exception as error:
-                print("An exception occurred:", error)
+                logger.error("get_activity_data and create_entry Exception: %s", error)
 
         return '', 200
     else:
@@ -295,12 +350,12 @@ def update_tokens(authorization_data:dict, filename:str) -> str:
             # save merged authorization_data with tokens
             save_json(filename, authorization_data)
         except Exception as error2:
-            print("An exception occurred:", error2)
+            logger.error("Save merged with refresh token Exception: %s", error2)
 
         access_token = authorization_data['access_token']
 
     except Exception as error:
-        print("An exception occurred:", error)
+        logger.error("Getting refresh token Exception: %s", error)
 
     return access_token
 
