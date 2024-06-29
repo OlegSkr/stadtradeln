@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from cryptography.fernet import Fernet
 
 # Configure the logging
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -80,15 +80,37 @@ def create_entry(sr_username, sr_password, entry_date, route_time, route_distanc
     
     try:
     
-        session_cookie, user_id = login_stadtradeln(sr_username, sr_password)
+        session, user_id = login_stadtradeln(sr_username, sr_password)
         
-        add_command = f"curl -s 'https://api.stadtradeln.de/v1/kmbook/{user_id}/add?sr_api_key=aeKie7iiv6ei' "
-        add_command += f"-H 'Cookie: {session_cookie}' "
-        add_command += f"--data-raw 'entry_id=0&route_movebis_id=&route_is_in_city=0&route_persons=1&route_tracks=1&route_distance={route_distance}&entry_date={entry_date}&route_time={route_time}&route_comment={route_comment}'"
-        logger.debug("add_command: %s", add_command)
+        stadtradeln_add_url = f'https://api.stadtradeln.de/v1/kmbook/{user_id}/add'
+
+        # GET parameters
+        get_params = {
+            'sr_api_key': 'aeKie7iiv6ei'
+        }
+
+        # POST parameters
+        post_params = {
+            'entry_date': f'{entry_date}',
+            'route_time': f'{route_time}',
+            'route_distance': f'{route_distance}',
+            'route_comment': f'{route_comment}',
+            'entry_id': 0,
+            'route_movebis_id': '',
+            'route_is_in_city': 0,
+            'route_persons': 1,
+            'route_tracks': 1
+        }
+
+        # Construct the full URL with GET parameters
+        stadtradeln_url = requests.Request('GET', stadtradeln_add_url, params=get_params).prepare().url
+
+        # Send the POST request
+        response = session.post(stadtradeln_url, data=post_params)
+
+        response.raise_for_status()
         
-        add_output = os.popen(add_command).read().strip()
-        add_json = json.loads(add_output)
+        logger.debug(f'stadtradeln add response length: %d', len(response.text))
         
     except Exception as error:
         logger.error("Create Entry Exception: %s", error)
@@ -96,36 +118,49 @@ def create_entry(sr_username, sr_password, entry_date, route_time, route_distanc
 def login_stadtradeln(username:str, password:str):
 
     logger.debug("username: %s", username)
-    logger.debug("password: %s", password)
+    logger.debug("password: %s", password)    
+    
+    stadtradeln_kmbook_url = 'https://login.stadtradeln.de/user/kmbook'
 
-    sr_username = urllib.parse.quote(username)
-    logger.debug("sr_username: %s", sr_username)
-    
-    sr_password = urllib.parse.quote(password)
-    logger.debug("sr_password: %s", sr_password)
-    
-    login_command = f"curl -is -X POST 'https://login.stadtradeln.de/user/dashboard?L=0&sr_api_key=aeKie7iiv6ei&sr_login_check=1' -d 'sr_auth_action=login&sr_prevent_empty_submit=1&sr_username={sr_username}&sr_password={sr_password}' | grep PHPSESSID" + " | awk {'print $2}'"
-    logger.debug("login_command: ")
-    logger.debug(login_command)
-    
-    login_output = os.popen(login_command).read().strip()
-    logger.debug("login_output: ")
-    logger.debug(login_output)
+    # GET parameters
+    get_params = {
+        'L': 0,
+        'sr_api_key': 'aeKie7iiv6ei',
+        'sr_login_check': 1
+    }
 
-    kmbook_command = f"curl -is 'https://login.stadtradeln.de/user/kmbook?L=0' -H 'Cookie: {login_output}' | grep 'add?sr_api_key'"
-    logger.debug("kmbook_command: ")
-    logger.debug(kmbook_command)
+    # POST parameters
+    post_params = {
+        'sr_username': f'{username}',
+        'sr_password': f'{password}',
+        'sr_auth_action': 'login'
+    }
+
+    # Construct the full URL with GET parameters
+    stadtradeln_url = requests.Request('GET', stadtradeln_kmbook_url, params=get_params).prepare().url
+
+    session = requests.session()
     
-    kmbook_output = os.popen(kmbook_command).read().strip()
-    logger.debug("kmbook_output: ")
-    logger.debug(kmbook_output)
+    # Send the POST request
+    response = session.post(stadtradeln_url, data=post_params)
+
+    response.raise_for_status()
+    
+    response2:dict = session.get(stadtradeln_kmbook_url)
+    
+    response2.raise_for_status()
+
+    logger.debug(f'stadtradeln kmbook response length: %d', len(response2.text))
+    
+    kmbook_output = response2.text
     
     result = re.search(r"https:\/\/api.stadtradeln.de\/v1\/kmbook\/(\b\d+)\/add", kmbook_output)
     sr_id = result.group(1)
     logger.debug(f'sr_id: {sr_id}')
     
-    # Session Cookie and User ID
-    return login_output, sr_id
+    # Session and User ID
+    return session, sr_id
+
 
 @app.route('/')
 def hello_world():
