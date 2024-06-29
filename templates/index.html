@@ -16,7 +16,7 @@ This App is intended to replace the manual input for <a href="https://www.stadtr
 <img src="/static/img/btn_strava_connectwith_orange.png" /></a><br />
 <br />
 This App needs the permission to read the activities information, in order to get the number of kilometers.<br />
-What happens with your data you can see <a href="https://github.com/OlegSkr/stadtradeln/blob/main/app.py#L239" target="_blank">here</a><br />
+What happens with your data you can see <a href="https://github.com/OlegSkr/stadtradeln/blob/main/app.py#L279" target="_blank">here</a><br />
 <br />
 <br />
 <b>Step 2:</b><br />
@@ -25,8 +25,8 @@ Add your credentials for Stadtradeln<br />
 <br />
 <img src="/static/img/logo-sr.svg" style="width: 230px" alt="Stadtradeln Logo">
 <br />
-Your credentials are <a href="https://github.com/OlegSkr/stadtradeln/blob/main/app.py#L33" target="_blank">encrypted</a> and saved in mongodb atlas <a href="https://github.com/OlegSkr/stadtradeln/blob/main/app.py#L149" target="_blank">here</a><br />
-And are used to login <a href="https://github.com/OlegSkr/stadtradeln/blob/main/app.py#L78" target="_blank">here</a>, when new Strava activity is being created.<br />
+Your credentials are <a href="https://github.com/OlegSkr/stadtradeln/blob/main/app.py#L57" target="_blank">encrypted</a> and saved in mongodb atlas <a href="https://github.com/OlegSkr/stadtradeln/blob/main/app.py#L185" target="_blank">here</a><br />
+And are used to login <a href="https://github.com/OlegSkr/stadtradeln/blob/main/app.py#L107" target="_blank">here</a>, when new Strava activity is being created.<br />
 <br />
 <br />
 ToDos:
@@ -36,8 +36,8 @@ ToDos:
 <li>Add support for editing and deleting activities</li>
 <li>Do better exception handling, especially in case of 4XX HTTP responses</li>
 <li><s>Clean up the code</s></li>
-<li>Use logging instead of stdout</li>
-<li><s>Do not write critical data into logs</s> (or only on the TRACE level)</li>
+<li><s>Use logging instead of stdout</s></li>
+<li><s>Do not write critical data into logs (or only on the DEBUG level)</s></li>
 <li>Replace bash curl calls with python requests if possible</li>
 <li>Upload more detailed data to Stadtradeln if user agrees and Stadtradeln allows to do that</li>
 </ol>

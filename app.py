@@ -1,4 +1,4 @@
-import os, sys, json, requests, copy, re, codecs, logging, locale, urllib.parse
+import os, sys, json, requests, copy, re, codecs, logging, urllib.parse
 from flask import Flask, request, render_template, redirect
 from pathlib import Path
 from datetime import datetime
@@ -6,24 +6,12 @@ from pymongo import MongoClient
 from cryptography.fernet import Fernet
 
 # Configure the logging
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
 # Create a logger
 logger = logging.getLogger(__name__)
-
-def set_german_locale():
-    try:
-        # Set the locale to German (Germany)
-        locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
-    except locale.Error as error:
-        logger.error("Error: Locale setting failed. Make sure the German locale is installed on your system: %s", error)
-        return False
-    return True
-
-set_german_locale()
-
 
 app = Flask(__name__)
 
@@ -32,6 +20,15 @@ strava_url_activities = 'https://www.strava.com/api/v3/activities'
 
 path_file = Path(sys.path[0])
 datapath = f'{path_file}/data'
+
+client_id = os.environ["client_id"]
+client_secret = os.environ["client_secret"]
+verify_token = os.environ["verify_token"]
+encryption_key = codecs.encode(os.environ["encryption_key"], 'utf-8')
+fernet = Fernet(encryption_key)
+mongodb_connection_string = os.environ["mongodb_connection_string"]
+mongodb = MongoClient(mongodb_connection_string)['stadtradeln']['credentials']
+
 
 def get_json(id:str) -> dict:
     
@@ -77,14 +74,7 @@ def save_json(id:str, json_data:dict):
         
     except Exception as error:
         logger.error("MongoDB Exception: %s", error)
-    
-client_id = os.environ["client_id"]
-client_secret = os.environ["client_secret"]
-verify_token = os.environ["verify_token"]
-encryption_key = codecs.encode(os.environ["encryption_key"], 'utf-8')
-fernet = Fernet(encryption_key)
-mongodb_connection_string = os.environ["mongodb_connection_string"]
-mongodb = MongoClient(mongodb_connection_string)['stadtradeln']['credentials']
+
 
 def create_entry(sr_username, sr_password, entry_date, route_time, route_distance, route_comment):
     
@@ -290,15 +280,6 @@ def webhook():
                 
                 logger.info(f'route_distance: {route_distance}')
                 
-                formatted_distance = f'{route_distance}'
-                try:
-                    # Format the float with two decimal places using the German locale
-                    formatted_distance = locale.format_string("%.2f", route_distance, grouping=True)
-                except Exception as error2:
-                    logger.error("Format string Exception: %s", error2)
-                
-                logger.info(f'formatted_distance: {formatted_distance}')
-                
                 route_comment = activity_data['name']
                 
                 activity_type = activity_data['type']
@@ -307,7 +288,7 @@ def webhook():
                 
                 # TODO: Check if activity type is Ride
                 if activity_type == 'Ride':
-                    create_entry(sr_username, sr_password, entry_date, route_time, formatted_distance, route_comment)
+                    create_entry(sr_username, sr_password, entry_date, route_time, route_distance, route_comment)
                 else:
                     logger.info('Not a bicycle ride, ignoring')
 
